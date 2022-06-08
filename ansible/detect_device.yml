@@ -1,0 +1,42 @@
+---
+- hosts: all
+  gather_facts: no
+  vars:
+    ansible_network_os: commscope.icx.icx
+    ansible_user: '{{username}}'
+    ansible_password: '{{password}}'
+
+  tasks:
+  - name: get neighbors
+    icx_command:
+      commands:
+         - show lldp neighbor
+    register: result
+
+  - name: get lines with access points
+    vars:
+      AP_name: "RuckusAP"
+    set_fact:
+      important_lines: "{{ important_lines|default([]) +  [item] }}"
+
+    when: item is search(AP_name)
+    with_items:
+    - "{{ result.stdout_lines[0]}}"
+
+  - name: Define string with all interfaces to pass to other tasks
+    set_fact:
+      interfaces_string: "{{ interfaces_string|default([]) + [linha] }}"
+      icx_interfaces: "{{ icx_interfaces|default() + linha}}"
+    with_items:
+    - "{{ important_lines }}"
+    vars:
+      regex: '^.{0,6}'
+      linha: "{{ 'e ' + item | regex_search(regex) }} "
+
+  - name: Set data to pass to other task
+    set_stats:
+      data:
+        my_data: "{{icx_interfaces}}"
+
+  - debug:
+      var: icx_interfaces

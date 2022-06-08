@@ -1,0 +1,26 @@
+---
+- hosts: all
+  gather_facts: no
+  vars:
+    ansible_network_os: commscope.icx.icx
+    ansible_user: '{{username}}'
+    ansible_password: '{{password}}'
+
+  tasks:
+   - name: create 3 vlans with 802-1w
+     commscope.icx.icx_vlan:
+       check_running_config: True
+       aggregate:
+         - {vlan_id: '{{vlanID1}}', tagged: {name: ethernet 1/1/12}}
+         - {vlan_id: '{{vlanID2}}', tagged: {name: ethernet 1/1/12}}
+         - {vlan_id: '{{vlanID3}}', tagged: {name: ethernet 1/1/12}}
+       stp:
+         type: 802-1w
+         priority: 128
+         enabled: True
+     tags: always
+     register: result
+
+   - name: debug
+     debug:
+       var: result
